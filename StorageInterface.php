@@ -22,6 +22,7 @@ interface StorageInterface
      * @param mixed $value
      */
     public function set(string $name, $value): void;
+
     /**
      * Return true if the given value exists
      *
