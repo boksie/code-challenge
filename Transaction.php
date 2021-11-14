@@ -5,12 +5,23 @@ require_once("StorageInterface.php");
 class Transaction implements StorageInterface
 {
     private $array = [];
-    private $started = false;
-    private $dictionary;
+    private $delarray = [];
+    private $active = false;
+    private $parentTransaction;
 
-    public function __construct($dictionary) {
-        $this->dictionary = $dictionary;
+    public function __construct($parentTransaction) {
+        if ($parentTransaction != null) {
+            $this->parentTransaction = $parentTransaction;
+            foreach ($parentTransaction->getArray() as $key => $value) {
+                $this->array[$key] = $value;
+            }
+        }
     }
+
+    public function getArray() {
+        return $this->array;
+    }
+
     /**
      * Return a stored value
      * Throws an exception when the given name does not exist
@@ -22,9 +33,9 @@ class Transaction implements StorageInterface
      */
     public function get(string $name) {
         if ($this->exists($name)) {
-            return $this->array[$name]; 
+            return $this->array[$name];
         }
-        throw new Exception("Key does not exist!");
+        throw new Exception("ERR: Cannot find a value by the name of \"{$name}\"");
     }
 
     /**
@@ -54,6 +65,8 @@ class Transaction implements StorageInterface
      */
     public function delete(string $name): void {
         if ($this->exists($name)) {
+            // Keep track of deleted items, so if committed they should also be deleted in parent
+            $this->delarray[$name] = $this->array[$name];
             unset($this->array[$name]);
         }
     }
@@ -62,7 +75,7 @@ class Transaction implements StorageInterface
      * Start a new transaction
      */
     public function startTransaction(): void {
-        $started = true;
+        $this->active = true;
     }
 
     /**
@@ -72,10 +85,17 @@ class Transaction implements StorageInterface
      * @throws \Exception
      */
     public function commit(): void {
-        if ($started) {
-            array_merge($dictionary, $array);
+        if ($this->active) {
+            foreach ($this->array as $key => $value) {
+                $this->parentTransaction->set($key, $value);
+            }
+            foreach ($this->delarray as $key => $value) {
+                $this->parentTransaction->delete($key);
+            }
+        } 
+        else {
+            throw new Exception("No active transaction!");
         }
-        throw new Exception("No active transaction!");
     }
 
     /**
@@ -85,11 +105,14 @@ class Transaction implements StorageInterface
      * @throws \Exception
      */
     public function rollback(): void {
-        if ($started) {
-            $started = false;
-            $array = [];
+        if ($this->active) {
+            $this->active = false;
+            $this->array = [];
+            $this->delarray = [];
         }
-        throw new Exception("No active transaction!");
+        else {
+            throw new Exception("No active transaction!");
+        }
     }
 }
 ?>

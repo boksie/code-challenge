@@ -6,20 +6,26 @@ require_once("Stack.php");
 
 class TransactionDB
 {
-    private $dictionary;
     private Stack $transactionStack;
     private Transaction $transaction;
     private $isRunning;
 
     public function __construct() {
-        $this->dictionary = [];
         $this->transactionStack = new Stack();
-        $this->transaction = new Transaction($this->dictionary);
-        $this->isRunning = true;
+        $this->transaction = new Transaction(null, []);
+    }
+
+    public function getArray() {
+        $transaction = $this->transaction;
+        while ($this->transactionStack->peek()) {
+            $transaction = $this->transactionStack->pop();
+        };
+        return $transaction->getArray();
     }
 
     // Start the console loop
     public function start() {
+        $this->isRunning = true;
         while ($this->isRunning)
         {
             try {
@@ -52,7 +58,7 @@ class TransactionDB
     }
 
 
-    private function runCommand($arguments) {
+    public function runCommand($arguments) {
         switch ($arguments[0]) {
             case "GET":
                 $response = $this->transaction->get($arguments[1]);
@@ -63,18 +69,20 @@ class TransactionDB
                 break;
             case "DELETE":
             case "DEL":
-                $deleted = $this->transaction->delete($arguments[1]);
+                $this->transaction->delete($arguments[1]);
                 break;
             case "START":
                 $this->transactionStack->push($this->transaction);
-                $this->transaction->startTransaction($arguments[1]);
+                $this->transaction = new Transaction($this->transaction);
+                $this->transaction->startTransaction();
                 break;
             case "COMMIT":
                 $this->transaction->commit();
+                $this->transaction = $this->transactionStack->pop();
                 break;
             case "ROLLBACK":
-                $this->transaction = $this->transactionStack->pop();
                 $this->transaction->rollback();
+                $this->transaction = $this->transactionStack->pop();
                 break;
             default:
                 throw new Exception("Invalid input!");

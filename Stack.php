@@ -2,6 +2,7 @@
 class Stack
 {
     private ?Node $head = null;
+    private int $size = 0;
 
     // return last enterd item on the stack
     public function pop() {
@@ -12,6 +13,7 @@ class Stack
         if ($this->head != null) {
             $this->head = $this->head->next;
         }
+        $this->size--;
         return $result->value;
     }
 
@@ -20,6 +22,18 @@ class Stack
         $previousNode = $this->head;
         $this->head = new Node($value);
         $this->head->next = $previousNode;
+        $this->size++;
+    }
+
+    public function peek() {
+        if ($this->head == null) {
+            return null;
+        }
+        return $result->value;
+    }
+
+    public function getSize() {
+        return $this->size;
     }
 }
 
