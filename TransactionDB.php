@@ -65,7 +65,12 @@ class TransactionDB
                 writeline($response);
                 break;
             case "SET":
-                $this->transaction->set($arguments[1], $arguments[2]);
+                if (count($arguments) == 3) {
+                    $this->transaction->set($arguments[1], $arguments[2]);
+                }
+                else {
+                    throw new Exception("Invalid amount of arguments!");
+                }
                 break;
             case "DELETE":
             case "DEL":
